@@ -1,5 +1,10 @@
 #include "render.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb/stb_image.h"
+
+#include "glm/gtc/type_ptr.hpp"
+
 geometry makeGeometry(vertex * verts, size_t vertCount, unsigned * indeces, size_t indxCount)
 {
 	// create an instance of geometry
@@ -23,6 +28,10 @@ geometry makeGeometry(vertex * verts, size_t vertCount, unsigned * indeces, size
 	// describe vertex data
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)sizeof(vertex::pos));
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(sizeof(vertex::pos) + sizeof(vertex::uv)));
 
 	// unbind buffers (in a SPECIFIC order)
 	glBindVertexArray(0);
@@ -84,6 +93,70 @@ void freeShader(shader & shad)
 	shad = {};
 }
 
+texture makeTexture(unsigned width, unsigned height, unsigned channels, const unsigned char * pixels)
+{
+	GLenum oglFormat = GL_RGBA;
+	switch (channels)
+	{
+	case 1:
+		oglFormat = GL_RED;
+		break;
+	case 2:
+		oglFormat = GL_RG;
+		break;
+	case 3:
+		oglFormat = GL_RGB;
+		break;
+	case 4:
+		oglFormat = GL_RGBA;
+		break;
+	default:
+		break;
+	}
+
+	texture tex = { 0, width, height, channels };
+
+	// generating and binding the texture
+	glGenTextures(1, &tex.handle);
+	glBindTexture(GL_TEXTURE_2D, tex.handle);
+
+	// buffer/send the actual data
+	glTexImage2D(GL_TEXTURE_2D, 0, oglFormat, width, height, 0, oglFormat, GL_UNSIGNED_BYTE, pixels);
+
+	// describe how the texture will be used
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	// unbind
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	return tex;
+}
+
+void freeTexture(texture & tex)
+{
+	glDeleteTextures(1, &tex.handle);
+	tex = {};
+}
+
+texture loadTexture(const char * imagePath)
+{
+	int imageWidth, imageHeight, imageFormat;
+	unsigned char *rawPixelData = nullptr;
+
+	// tell stb image to load image
+	stbi_set_flip_vertically_on_load(true);
+	rawPixelData = stbi_load(imagePath, &imageWidth, &imageHeight, &imageFormat, STBI_default);
+
+	// pass data to make texture to make texture
+	texture tex = makeTexture(imageWidth, imageHeight, imageFormat, rawPixelData);
+
+	// free the image
+	stbi_image_free(rawPixelData);
+
+	return tex;
+}
+
 void draw(const shader & shad, const geometry & geo)
 {
 	// bind shader program
@@ -94,4 +167,16 @@ void draw(const shader & shad, const geometry & geo)
 	
 	// draw
 	glDrawElements(GL_TRIANGLES, geo.size, GL_UNSIGNED_INT, 0);
+}
+
+void setUniform(const shader & shad, GLuint location, const glm::mat4 & value)
+{
+	glProgramUniformMatrix4fv(shad.program, location, 1, GL_FALSE, glm::value_ptr(value));
+}
+
+void setUniform(const shader & shad, GLuint location, const texture & value, int textureSlot)
+{
+	glActiveTexture(GL_TEXTURE0 + textureSlot);
+	glBindTexture(GL_TEXTURE_2D, value.handle);
+	glProgramUniform1i(shad.program, location, textureSlot);
 }
