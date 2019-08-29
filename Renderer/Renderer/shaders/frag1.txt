@@ -3,4 +3,7 @@ layout (location = 3) uniform sampler2D albedo;
 in vec2 vUV;
 in vec4 vColor;
 out vec4 fragColor;
-void main() { fragColor = texture(albedo, vUV); }
+void main() 
+{ 
+	fragColor = texture(albedo, vUV); 
+}

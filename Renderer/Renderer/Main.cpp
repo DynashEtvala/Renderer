@@ -44,7 +44,7 @@ int main()
 		game.tick();
 		game.clear();
 
-		triModel = glm::rotate(triModel, glm::radians(1.0f), glm::vec3(0, 1, 0));
+		triModel = glm::rotate(triModel, glm::radians(5.0f), glm::vec3(0, 1, 0));
 
 		setUniform(basicShade, 2, triModel);
 
