@@ -29,9 +29,11 @@ geometry makeGeometry(vertex * verts, size_t vertCount, unsigned * indeces, size
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)0);
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)sizeof(vertex::pos));
+	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)sizeof(vertex::pos));
 	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(sizeof(vertex::pos) + sizeof(vertex::uv)));
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(sizeof(vertex::pos) + sizeof(vertex::norm)));
+	glEnableVertexAttribArray(3);
+	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(sizeof(vertex::pos) + sizeof(vertex::norm) + sizeof(vertex::uv)));
 
 	// unbind buffers (in a SPECIFIC order)
 	glBindVertexArray(0);
@@ -167,6 +169,16 @@ void draw(const shader & shad, const geometry & geo)
 	
 	// draw
 	glDrawElements(GL_TRIANGLES, geo.size, GL_UNSIGNED_INT, 0);
+}
+
+void setUniform(const shader & shad, GLuint location, const glm::vec3 & value)
+{
+	glProgramUniform3fv(shad.program, location, 1, glm::value_ptr(value));
+}
+
+void setUniform(const shader & shad, GLuint location, const glm::vec4 & value)
+{
+	glProgramUniform4fv(shad.program, location, 1, glm::value_ptr(value));
 }
 
 void setUniform(const shader & shad, GLuint location, const glm::mat4 & value)
